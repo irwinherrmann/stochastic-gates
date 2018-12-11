@@ -24,11 +24,10 @@ import torchvision.datasets as datasets
 import math
 import collections
 
+import model_select
+
 import os
 import argparse
-
-import models.test_models.test_convnet as testres
-import models.test_models.test_unattach_convnet as testunres
 
 from visdom import Visdom
 import numpy as np
@@ -96,18 +95,7 @@ def main():
         print('Did not recognize model name')
         exit(1)
 
-    is_independent = 'un' in args.resume
-    is_res101 = 'res101' in args.resume
-
-    if is_independent:
-        model_module = testunres
-    else:
-        model_module = testres
-
-    if is_res101:
-        model = model_module.ResNet101_ImageNet()
-    else:
-        model = model_module.ResNet50_ImageNet()
+    model_module, model = model_select.get_test(args.resume)
 
     # Data loading code
     normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
@@ -362,8 +350,7 @@ def validate_one(model_module, val_loader, model, seed, gate_mode, precision_map
         input_var = torch.autograd.Variable(input, volatile=True)
         target_var = torch.autograd.Variable(target, volatile=True)
 
-        output, activation_rates, w1bns_list = model(input_var, gate_mode = gate_mode, prob = prob, threshold = threshold)
-
+        output, activation_rates = model(input_var, gate_mode = gate_mode, prob = prob, threshold = threshold)
 
         # compute output
         preds = {}
@@ -433,51 +420,24 @@ def validate(module_model, val_loader, model, criterion, epoch, prob=1, long_for
 
     from scipy import stats
 
-    if False:
-        precision_map = {}
-        pred_map = {}
-        ensemble_acc = []
-        outputs = []
+    precision_map = {}
+    pred_map = {}
+    ensemble_acc = []
+    outputs = []
+    THRESHOLD = .5
+    seed = 0
+    gate_mode = 'argmax'
+    print('Begin %s run...' % gate_mode)
+    num_correct, num_total, num_acts, acts_nan_counter, targets, activ_output = validate_one(module_model, val_loader, model, seed, gate_mode, precision_map, pred_map, threshold=THRESHOLD)
+    print('%s seed %d: prec@1 %.4f prec@5 %.4f act %.4f' % (gate_mode, seed, precision_map[seed][0], precision_map[seed][1], float(num_acts)/ num_total))
+    print()
 
-        prob = .8
-        seeds = range(args.num_seeds)
-        acts = []
-        gate_mode = 'stochastic-variable'
-        print('Begin %s run...' % gate_mode)
-        for seed in seeds:
-            num_correct, num_total, num_acts, acts_nan_counter, targets, activ_output = validate_one(module_model, val_loader, model, seed, gate_mode, precision_map, pred_map, prob=prob)
-            print('\t%s seed %d: prec@1 %.4f prec@5 %.4f act %.4f' % (gate_mode, seed, precision_map[seed][0], precision_map[seed][1], float(num_acts)/ num_total))
-            acts.append(float(num_acts)/ num_total)
-        prec1s = []
-        prec5s = []
-        for k in precision_map.keys():
-            prec1s.append(precision_map[k][0])
-            prec5s.append(precision_map[k][1])
-        print('stochastic stats prec@1\t mean %.4f stddev %.4f' % (np.mean(prec1s), np.std(prec1s)))
-        print('stochastic stats prec@5\t mean %.4f stddev %.4f' % (np.mean(prec5s), np.std(prec5s)))
-        print('stochastic stats act\t mean %.4f stddev %.4f' % (np.mean(acts), np.std(acts)))
-        print()
-
-    if True:
-        precision_map = {}
-        pred_map = {}
-        ensemble_acc = []
-        outputs = []
-        THRESHOLD = .5
-        seed = 0
-        gate_mode = 'argmax'
-        print('Begin %s run...' % gate_mode)
-        num_correct, num_total, num_acts, acts_nan_counter, targets, activ_output = validate_one(module_model, val_loader, model, seed, gate_mode, precision_map, pred_map, threshold=THRESHOLD)
-        print('%s seed %d: prec@1 %.4f prec@5 %.4f act %.4f' % (gate_mode, seed, precision_map[seed][0], precision_map[seed][1], float(num_acts)/ num_total))
-        print()
-        exit(1)
-
-        seed = 0
-        gate_mode = 'always_on'
-        print('Begin %s run...' % gate_mode)
-        num_correct, num_total, num_acts, acts_nan_counter, targets, activ_output = validate_one(module_model, val_loader, model, seed, gate_mode, precision_map, pred_map)
-        print('%s seed %d: prec@1 %.4f prec@5 %.4f act %.4f' % (gate_mode, seed, precision_map[seed][0], precision_map[seed][1], float(num_acts)/ num_total))
-        print()
+    seed = 0
+    gate_mode = 'always_on'
+    print('Begin %s run...' % gate_mode)
+    num_correct, num_total, num_acts, acts_nan_counter, targets, activ_output = validate_one(module_model, val_loader, model, seed, gate_mode, precision_map, pred_map)
+    print('%s seed %d: prec@1 %.4f prec@5 %.4f act %.4f' % (gate_mode, seed, precision_map[seed][0], precision_map[seed][1], float(num_acts)/ num_total))
+    print()
 
     precision_map = {}
     pred_map = {}

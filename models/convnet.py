@@ -270,9 +270,6 @@ class ResNet_cifar(nn.Module):
 def ResNet110_cifar(nclass=10, test=False):
     return ResNet_cifar(BasicBlock, [18,18,18], num_classes=nclass, test=test)
 
-def ResNet_mini_cifar(nclass=10, test=False):
-    return ResNet_cifar(BasicBlock, [1,1,1], num_classes=nclass, test=test)
-
 def ResNet50_ImageNet(test=False):
     return ResNet_ImageNet(Bottleneck, [3,4,6,3], test=test)
 
@@ -286,31 +283,16 @@ def ResNet152_ImageNet(test=False):
 class ActivationAccum():
     def __init__(self, epoch):
         self.numblocks = [18,18,18]
-#        self.numblocks = [1,1,1]
         self.gates = {i: 0 for i in range(np.sum(self.numblocks))}
         self.classes = {i: 0 for i in range(10)}
         self.epoch = epoch
 
-        if self.epoch % 25 == 0:
-            self.heatmap = torch.cuda.FloatTensor(len(self.classes), len(self.gates))
-            self.heatmap[:, :] = 0
-
     def accumulate(self, actives, targets):
         for j, act in enumerate(actives):
             self.gates[j] += torch.sum(act)
-
-            if self.epoch % 25 == 0:
-                for k in range(10):
-                    self.classes[k] += torch.sum(act[targets==k])
-                    self.heatmap[k, j] += torch.sum(act[targets==k]).data[0]
             
     def getoutput(self):
-        if self.epoch % 25 == 0:
-            return([{k: self.gates[k].data[0] / 10000 for k in self.gates},
-                {k: self.classes[k].data[0] / 1000 / np.sum(self.numblocks) for k in self.classes},
-                self.heatmap.cpu().numpy() / 1000])
-        else:
-            return([{k: self.gates[k].data[0] / 10000 for k in self.gates}])
+        return([{k: self.gates[k].data[0] / 10000 for k in self.gates}])
 
 
 class ActivationAccum_img():

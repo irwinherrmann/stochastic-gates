@@ -259,7 +259,8 @@ class ResNet_ImageNet(nn.Module):
         out = self.avgpool(out)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
-        return out, gate_activations, w1bns
+        return out, gate_activations
+#        return out, gate_activations, w1bns
 
 class ResNet_cifar(nn.Module):
     def __init__(self, block, num_blocks, num_classes=10, test=False):

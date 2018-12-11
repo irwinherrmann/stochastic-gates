@@ -18,7 +18,7 @@ import torchvision.datasets as datasets
 import os
 import argparse
 
-from models.convnet_aig import *
+import model_select
 
 from visdom import Visdom
 import numpy as np
@@ -26,14 +26,13 @@ import numpy as np
 import cls
 
 
-model = ResNet110_cifar(nclass=10)
-
-#CIFAR_PATH = '/home/cih5/data'
-CIFAR_PATH = '/home/charles/data'
-RESUME_CKPT = ''
+DEFAULT_DIR = '/home/charles/data'
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Example')
+parser.add_argument('--dir', default=DEFAULT_DIR)
+parser.add_argument('--model', default='res')
+
 parser.add_argument('--expname', default='give_me_a_name_cifar', type=str,
                     help='name of experiment')
 parser.add_argument('--lrfact', default=1, type=float,
@@ -56,7 +55,7 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=20, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--resume', default=RESUME_CKPT, type=str,
+parser.add_argument('--resume', default='', type=str,
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('--test', dest='test', action='store_true',
                     help='To only run inference on test set')
@@ -70,11 +69,14 @@ parser.set_defaults(visdom=False)
 best_prec1 = 0
 
 def main():
-    global args, best_prec1, model
+    global args, best_prec1
     args = parser.parse_args()
     torch.manual_seed(args.seed)
 
     torch.cuda.manual_seed(args.seed)
+
+    model_module, model = model_select.get_cifar(args.model)
+
     if args.visdom:
         global plotter 
         print('Visdom env_name=%s'%args.expname)
@@ -96,11 +98,11 @@ def main():
    
     kwargs = {'num_workers': 2, 'pin_memory': True}
     train_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR10(CIFAR_PATH, train=True, download=True,
+        datasets.CIFAR10(args.dir, train=True, download=True,
                          transform=transform_train),
         batch_size=args.batch_size, shuffle=True, **kwargs)
     val_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR10(CIFAR_PATH, train=False, transform=transform_test),
+        datasets.CIFAR10(args.dir, train=False, transform=transform_test),
         batch_size=args.batch_size, shuffle=False, **kwargs)
     
 #    model = torch.nn.DataParallel(model).cuda()
@@ -147,7 +149,7 @@ def main():
         train(train_loader, model, criterion, optimizer, epoch)
 
         # evaluate on validation set
-        prec1 = validate(val_loader, model, criterion, epoch)
+        prec1 = validate(model_module, val_loader, model, criterion, epoch)
 
         # remember best prec@1 and save checkpoint
         is_best = prec1 > best_prec1
@@ -213,22 +215,10 @@ def train(train_loader, model, criterion, optimizer, epoch):
         batch_mean = acts_sum / (len(activation_rates) * activation_rates[0].shape[0])
         #batch_acts = len(activation_rates) * torch.pow(tr - batch_mean, 2)
         batch_acts = batch_mean.gt(tr).type(torch.cuda.FloatTensor) * len(activation_rates) * torch.pow(tr - batch_mean, 2)
-#### BEGIN CHANGE
+
         # batch target rate loss
         acts = batch_acts
         prev_batch_mean = batch_mean.data[0]
-        # new target rate loss - hard
-        #if epoch > 150:
-        #    acts = 0
-        #    for act in activation_rates:
-        #        acts += 1 - 4 * torch.pow(.5 - torch.mean(act), 2)
-
-        # new target rate loss - soft
-        #if epoch > 150:
-        #    acts = 0
-        #    for act in activation_rates:
-        #        acts += .25 - torch.pow(.5 - torch.mean(act), 2)
-#### END CHANGE
 
         # this is important when using data DataParallel
         acts_plot = torch.mean(acts_plot / len(activation_rates))
@@ -270,12 +260,12 @@ def train(train_loader, model, criterion, optimizer, epoch):
         plotter.plot('loss', 'train', epoch, losses.avg)
 
 
-def validate(val_loader, model, criterion, epoch):
+def validate(model_module, val_loader, model, criterion, epoch):
     """Perform validation on the validation set"""
     batch_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
-    accumulator = ActivationAccum(epoch=epoch)
+    accumulator = model_module.ActivationAccum(epoch=epoch)
     activations = AverageMeter()
     
     # Temperature of Gumble Softmax 

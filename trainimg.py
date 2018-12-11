@@ -16,13 +16,7 @@ from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 import torchvision.datasets as datasets
 
-import models.convnet_aig as conv
-import models.mobilenet_aig as mobile
-import models.unattach_convnet as un_conv
-import models.unattach_mobilenet as un_mobile
-import models.unattach_mobilenet_filter as mobile_filter
-import models.smartergate_convnet as smartergate_conv
-
+import model_select
 
 import math
 from visdom import Visdom
@@ -49,9 +43,7 @@ parser.add_argument('--model', default='res')
 parser.add_argument('--expname', default='give_me_a_name', type=str, metavar='n',
                     help='name of experiment (default: test')
 parser.add_argument('--batchrate', type=bool, default=False)
-parser.add_argument('--pachinko', type=bool, default=False)
 parser.add_argument('--constquad', type=bool, default=False)
-parser.add_argument('--anneal', type=bool, default=False)
 
 parser.add_argument('--timing', default=False)
 parser.add_argument('--data', default='',
@@ -117,8 +109,7 @@ def main():
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-
-    model_module, model, pretrained_end = model_select.from_modelname(args.model)
+    model_module, model, pretrained_end = model_select.get_imgnet(args.model)
 
     # either a pretrained or a resume for imagenet. nothing from scratch
     if args.pretrained == '':
@@ -354,8 +345,6 @@ def train(train_loader, model, criterion, optimizer, epoch, target_rates):
         top1.update(prec1[0], input.size(0))
         top5.update(prec5[0], input.size(0))
         activations.update(acts_plot.data[0], 1)
-        if is_gate_pachinko:
-            gate_activations.append(gate_acts)
 
         if args.timing:
             time_accum = time.time() - end
