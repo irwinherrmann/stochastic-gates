@@ -52,11 +52,11 @@ class Sequential_ext(nn.Module):
     def __len__(self):
         return len(self._modules)
 
-    def forward(self, input, temperature=1, gate_mode='stochastic', openings=None):
+    def forward(self, input, temperature=1, gate_mode='stochastic', threshold=.5, openings=None):
         gate_activations = []
         w1bns = []
         for i, module in enumerate(self._modules.values()):
-            input, gate_activation, w1bn = module(input, temperature, gate_mode)
+            input, gate_activation, w1bn = module(input, temperature, gate_mode, threshold)
             gate_activations.append(gate_activation)
             w1bns.append(w1bn)
         return input, gate_activations, w1bns
@@ -233,26 +233,26 @@ class ResNet_ImageNet(nn.Module):
             self.in_planes = planes * block.expansion
         return Sequential_ext(*layers)
 
-    def forward(self, out, temperature=1, gate_mode = 'stochastic', prob=1, threshold=.5):
+    def forward(self, out, temperature=1, gate_mode = 'stochastic', threshold=.5):
         gate_activations = []
         w1bns = []
 
         out = self.relu(self.bn1(self.conv1(out)))
         out = self.maxpool(out)
 
-        out, a, w1 = self.layer1(out, temperature, gate_mode)
+        out, a, w1 = self.layer1(out, temperature, gate_mode, threshold)
         gate_activations.extend(a)
         w1bns.extend(w1)
 
-        out, a, w1 = self.layer2(out, temperature, gate_mode)
+        out, a, w1 = self.layer2(out, temperature, gate_mode, threshold)
         gate_activations.extend(a)
         w1bns.extend(w1)
 
-        out, a, w1 = self.layer3(out, temperature, gate_mode)
+        out, a, w1 = self.layer3(out, temperature, gate_mode, threshold)
         gate_activations.extend(a)
         w1bns.extend(w1)
 
-        out, a, w1 = self.layer4(out, temperature, gate_mode)
+        out, a, w1 = self.layer4(out, temperature, gate_mode, threshold)
         gate_activations.extend(a)
         w1bns.extend(w1)
 
