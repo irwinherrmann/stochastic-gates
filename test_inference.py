@@ -464,13 +464,12 @@ def validate(module_model, val_loader, model, criterion, epoch, prob=1, long_for
         ensemble_acc = []
         outputs = []
         THRESHOLD = .5
-        if False:
-            seed = 0
-            gate_mode = 'argmax'
-            print('Begin %s run...' % gate_mode)
-            num_correct, num_total, num_acts, acts_nan_counter, targets, activ_output = validate_one(module_model, val_loader, model, seed, gate_mode, precision_map, pred_map, threshold=THRESHOLD)
-            print('%s seed %d: prec@1 %.4f prec@5 %.4f act %.4f' % (gate_mode, seed, precision_map[seed][0], precision_map[seed][1], float(num_acts)/ num_total))
-            print()
+        seed = 0
+        gate_mode = 'argmax'
+        print('Begin %s run...' % gate_mode)
+        num_correct, num_total, num_acts, acts_nan_counter, targets, activ_output = validate_one(module_model, val_loader, model, seed, gate_mode, precision_map, pred_map, threshold=THRESHOLD)
+        print('%s seed %d: prec@1 %.4f prec@5 %.4f act %.4f' % (gate_mode, seed, precision_map[seed][0], precision_map[seed][1], float(num_acts)/ num_total))
+        print()
 
         seed = 0
         gate_mode = 'always_on'

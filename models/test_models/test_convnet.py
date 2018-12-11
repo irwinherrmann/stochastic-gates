@@ -183,7 +183,7 @@ class Bottleneck(nn.Module):
             w = self.gs(w, temp=temperature, force_hard=True)
             output_multiplier = w[:,1].unsqueeze(1)
         elif gate_mode == "always_on":
-            output_multiplier = torch.autograd.Variable(torch.ones(out.size()).cuda(), volatile=True)
+            output_multiplier = torch.autograd.Variable(torch.ones(w[:,1].unsqueeze(1).size()).cuda(), volatile=True)
         else:
           assert(False) # Error: added a possible gate mode without implementing it.
 
