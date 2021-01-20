@@ -3,6 +3,7 @@
 This repository contains a PyTorch implementation of the paper  "Channel-selection using Gumbel Softmax" (previously titled "An end-to-end approach for speeding up neural networks"). Published at ECCV '20.
 
 ECCV link: https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123720239.pdf
+
 Arxiv link: https://arxiv.org/abs/1812.04180
 
 Note that this code results in a pruned network with higher accuracy than the baseline at rough half of the FLOPs (ResNet 50: 76.14 with only 55% of original FLOPs).
