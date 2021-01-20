@@ -7,7 +7,7 @@ Arxiv link: https://arxiv.org/abs/1812.04180
 
 Note that this code results in a pruned network with higher accuracy than the baseline at rough half of the FLOPs (ResNet 50: 76.14 with only 55% of original FLOPs).
 
-# Requirements
+## Requirements
 
 This implementation is developed for
 
@@ -18,7 +18,7 @@ Code uses PyTorch 0.3.1. We timed it and found that this code is faster in 0.3.1
 
 Note, this code very closely follows the code for Convolutional Networks with Adaptive Inference Graphs (ConvNet-AIG): https://github.com/andreasveit/convnet-aig. Thanks to Andreas Veit and Serge Belongie for all the help.
 
-# Citing
+## Citing
 
 If you find this helps your research, please consider citing:
 
@@ -30,3 +30,7 @@ If you find this helps your research, please consider citing:
   year={2020},
   organization={Springer}
 }
+
+## Contact
+
+Please contact cih at cs dot cornell dot edu
