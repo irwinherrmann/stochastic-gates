@@ -22,6 +22,7 @@ Note, this code very closely follows the code for Convolutional Networks with Ad
 
 If you find this helps your research, please consider citing:
 
+```
 @inproceedings{herrmann2020channel,
   title={Channel Selection Using Gumbel Softmax},
   author={Herrmann, Charles and Bowen, Richard Strong and Zabih, Ramin},
@@ -30,6 +31,7 @@ If you find this helps your research, please consider citing:
   year={2020},
   organization={Springer}
 }
+```
 
 ## Contact
 
